@@ -78,8 +78,9 @@ INSERT INTO farmacia (
   'Farmácia Popular',
   'Rua Independência',
   '350',
-  'Jardim América',
+  'Prox Jardim América',
   'Campinas',
+  'São Paulo',
   'SP',
   '13020010'
 ),
@@ -310,3 +311,104 @@ FROM 'usuario_farmacia'@'localhost';
 
 --Excluíndo usuário 
 DROP USER 'usuario_farmacia'@'localhost';
+
+--Procedure: listar produtos de uma farmácia
+DELIMITER $$
+
+CREATE PROCEDURE listar_produtos_farmacia (IN cnpjFarm VARCHAR(14))
+BEGIN
+    SELECT codproduto, quantproduto, valorproduto
+    FROM produto
+    WHERE cnpj_farmacia = cnpjFarm;
+END$$
+
+DELIMITER ;
+
+--executando o procedure
+CALL listar_produtos_farmacia('12345678000199');
+
+--Procedure: atualizar o valor do produto
+DELIMITER $$
+
+CREATE PROCEDURE atualizar_valor_produto (
+  IN p_cod INT,
+  IN p_valor DECIMAL(10,2)
+)
+BEGIN
+    UPDATE produto
+    SET valorproduto = p_valor
+    WHERE codproduto = p_cod;
+END$$
+
+DELIMITER ;
+
+--Executando o procedure acima
+CALL atualizar_valor_produto(1. 19.90);
+
+--Function: calcular o valor total em estoque
+DELIMITER $$
+
+CREATE FUNCTION valor_total_produto(p_cod INT)
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+  DECLARE total DECIMAL(10,2);
+
+  SELECT quantproduto * valorproduto
+  INTO total
+  FROM produto
+  WHERE codproduto = p_cod;
+
+  RETURN total;
+END$$
+
+DELIMITER ;
+
+--usando a função acima
+SELECT valor_total_produto(1) AS total_em_estoque;
+
+--Function: quantidade de produtos por farmácia
+DELIMITER $$
+
+CREATE FUNCTION qtd_produtos_farmacia(p_cnpj VARCHAR(14))
+RETURNS INT
+DETERMINISTIC
+BEGIN
+  DECLARE total INT;
+
+  SELECT COUNT(*)
+  INTO total
+  FROM produto
+  WHERE cnpj_farmacia = p_cnpj;
+
+  RETURN total;
+  END$$
+
+  DELIMITER ;
+
+  --Executando a função acima
+  SELECT qnt_produtos_farmacia('12345678000199');
+
+  --Função de soma
+  DELIMITER $$
+
+  DROP FUNCTION IF EXISTS qnt_produtos_farmacia $$
+
+  CREATE FUNCTION qnt_produtos_farmacia(p_cnpj VARCHAR(14))
+  RETURNS INT
+  DETERMINISTIC
+  BEGIN
+    DECLARE total INT;
+
+    SELECT SUM(quantproduto)
+    INTO total
+    FROM produto
+    WHERE cnpj_farmacia = p_cnpj;
+
+    RETURN total;
+END$$
+
+DELIMITER ;
+
+--Testando a função acima
+SELECT qnt_produtos_farmacia('1234567800199') AS total_em_estoque;
